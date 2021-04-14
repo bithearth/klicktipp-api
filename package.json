@@ -1,0 +1,25 @@
+{
+  "name": "klicktipp-connector",
+  "version": "1.0.0",
+  "description": "",
+  "main": "klicktippAPI.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ahmadram007/klicktippApi.git"
+  },
+  "keywords": [
+    "klicktipp"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ahmadram007/klicktippApi/issues"
+  },
+  "homepage": "https://github.com/Ahmadram007/klicktippApi#readme",
+  "dependencies": {
+    "axios": "^0.21.1"
+  }
+}
