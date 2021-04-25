@@ -639,15 +639,15 @@ class KlicktippConnector {
     return false;
   };
 
-  httpRequest = async (path, method = "GET", datajs, usesession = true) => {
-    const data = querystring.stringify(datajs);
+  httpRequest = async (path, method = "GET", data, usesession = true) => {
     const options = {
       baseURL: this.baseURL,
       method,
       url: path,
       data,
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
+        "Content": "application/json"
       },
     };
     if (usesession && this.sessionName !== "") {
