@@ -1,8 +1,8 @@
 # klicktippAPI
 
-A node translation of php Wrapper of the klicktipp API
-For more Information, see the documentation of the offical [PHP version].
+A node translation of php Wrapper of the klicktipp API.
 
+Please see the documentation of the offical [PHP version] For more Information,.
 ## Install
 
 ```bash
