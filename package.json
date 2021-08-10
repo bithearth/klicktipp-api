@@ -1,5 +1,5 @@
 {
-  "name": "klicktipp-connector",
+  "name": "klicktipp-api",
   "version": "1.0.1",
   "description": "",
   "main": "klicktippAPI.js",
@@ -8,17 +8,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Ahmadram007/klicktippApi.git"
+    "url": "git+https://github.com/brunokrauss/klicktipp-api.git"
   },
   "keywords": [
-    "klicktipp"
+    "klicktipp",
+    "klicktipp api"
   ],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Ahmadram007/klicktippApi/issues"
+    "url": "https://github.com/brunokrauss/klicktipp-api/issues"
   },
-  "homepage": "https://github.com/Ahmadram007/klicktippApi#readme",
+  "homepage": "https://github.com/brunokrauss/klicktipp-api#readme",
   "dependencies": {
     "axios": "^0.21.1"
   }
