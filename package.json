@@ -1,7 +1,7 @@
 {
   "name": "klicktipp-api",
-  "version": "1.0.1",
-  "description": "",
+  "version": "1.0.2",
+  "description": "A node translation of php Wrapper of the klicktipp API.",
   "main": "klicktippAPI.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
