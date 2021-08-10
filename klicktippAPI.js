@@ -29,22 +29,23 @@ class KlicktippConnector {
    */
   login = async (username, password) => {
     if (!(username && password)) {
-      this.error = "Login failed: Illegal Arguments";
-      return false;
+      throw 'Login failed: Illegal Arguments';
     }
+    
     const res = await this.httpRequest(
       "/account/login",
       "POST",
       { username, password },
-      false
+      false,
     );
+
     if (!res.isAxiosError) {
       this.sessionId = res.data.sessid;
       this.sessionName = res.data.session_name;
       return true;
     }
-    this.error = `Login failed: ${res.response.statusText}`;
-    return false;
+
+    throw `Login failed: ${res.response.statusText}`;
   };
 
   /**
