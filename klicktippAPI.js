@@ -6,7 +6,6 @@ class KlicktippConnector {
     this.baseURL = service;
     this.sessionName = "";
     this.sessionId = "";
-    this.error = "";
   }
 
   /**
@@ -16,7 +15,7 @@ class KlicktippConnector {
    */
   getLastError = () => {
     const result = this.error;
-    this.error = "";
+    throw "";
     return result;
   };
 
@@ -42,6 +41,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       this.sessionId = res.data.sessid;
       this.sessionName = res.data.session_name;
+
       return true;
     }
 
@@ -55,14 +55,15 @@ class KlicktippConnector {
    */
   logout = async () => {
     const res = await this.httpRequest("/account/logout", "POST");
+
     if (!res.isAxiosError) {
       this.sessionId = "";
       this.sessionName = "";
+
       return true;
     }
 
-    this.error = `Logout failed: ${res.response.statusText}`;
-    return false;
+    throw `Logout failed: ${res.response.statusText}`;
   };
 
   /**
@@ -77,8 +78,7 @@ class KlicktippConnector {
       return res.data;
     }
 
-    this.error = `Subscription process index failed: ${res.response.statusText}`;
-    return false;
+    throw `Subscription process index failed: ${res.response.statusText}`;
   };
 
   /**
@@ -90,8 +90,7 @@ class KlicktippConnector {
    */
   subscriptionProcessGet = async (listid) => {
     if (!listid || listid === "") {
-      this.error = "Illegal Arguments";
-      return false;
+      throw "Illegal Arguments";
     }
 
     // retrieve
@@ -101,8 +100,7 @@ class KlicktippConnector {
       return res.data;
     }
 
-    this.error = `Subscription process get failed: ${res.response.statusText}`;
-    return false;
+    throw `Subscription process get failed: ${res.response.statusText}`;
   };
 
   /**
@@ -115,8 +113,7 @@ class KlicktippConnector {
    */
   subscriptionProcessRedirect = async (listid, email) => {
     if (!listid || listid === "" || !email || email === "") {
-      this.error = "Illegal Arguments";
-      return false;
+      throw "Illegal Arguments";
     }
 
     // update
@@ -126,8 +123,8 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return res.data;
     }
-    this.error = `Subscription process get redirection url failed: ${res.response.statusText}`;
-    return false;
+
+    throw `Subscription process get redirection url failed: ${res.response.statusText}`;
   };
   /**
    * Get all manual tags of the logged in user. Requires to be logged in.
@@ -136,11 +133,12 @@ class KlicktippConnector {
    */
   tagIndex = async () => {
     const res = await this.httpRequest("/tag");
+
     if (!res.isAxiosError) {
       return res.data;
     }
-    this.error = `Tag index failed: ${res.response.statusText}`;
-    return false;
+
+    throw `Tag index failed: ${res.response.statusText}`;
   };
 
   /**
@@ -152,16 +150,15 @@ class KlicktippConnector {
    */
   tagGet = async (tagid) => {
     if (!tagid || tagid === "") {
-      this.error = "Illegal Arguments";
-      return false;
+      throw "Illegal Arguments";
     }
     const res = await this.httpRequest(`/tag/${tagid}`);
 
     if (!res.isAxiosError) {
       return res.data;
     }
-    this.error = `Tag get failed: ${res.response.statusText}`;
-    return false;
+  
+    throw `Tag get failed: ${res.response.statusText}`;
   };
 
   /**
@@ -174,8 +171,7 @@ class KlicktippConnector {
    */
   tagCreate = async (name, text = "") => {
     if (!name || name === "") {
-      this.error = "Illegal Arguments";
-      return false;
+      throw "Illegal Arguments";
     }
     const data = { name };
     if (text !== "") {
@@ -186,8 +182,8 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return res.data;
     }
-    this.error = `Tag creation failed: ${res.response.statusText}`;
-    return false;
+
+    throw `Tag creation failed: ${res.response.statusText}`;
   };
 
   /**
@@ -201,8 +197,7 @@ class KlicktippConnector {
    */
   tagUpdate = async (tagid, name = "", text = "") => {
     if (!tagid || tagid === "" || (name === "" && text === "")) {
-      this.error = "Illegal Arguments";
-      return false;
+      throw "Illegal Arguments";
     }
     const data = {};
     if (name !== "") {
@@ -217,8 +212,8 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return true;
     }
-    this.error = `Tag update failed: ${res.response.statusText}`;
-    return false;
+
+    throw `Tag update failed: ${res.response.statusText}`;
   };
 
   /**
@@ -230,8 +225,7 @@ class KlicktippConnector {
    */
   tagDelete = async (tagid) => {
     if (!tagid || tagid === "") {
-      this.error = "Illegal Arguments";
-      return false;
+      throw "Illegal Arguments";
     }
 
     const res = await this.httpRequest(`/tag/${tagid}`, "DELETE");
@@ -239,8 +233,8 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return true;
     }
-    this.error = `Tag deletion failed: ${res.response.statusText}`;
-    return false;
+    
+    throw `Tag deletion failed: ${res.response.statusText}`;
   };
 
   /**
@@ -254,8 +248,8 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return res.data;
     }
-    this.error = `Field index failed: ${res.response.statusText}`;
-    return false;
+
+    throw `Field index failed: ${res.response.statusText}`;
   };
 
   /**
@@ -276,8 +270,7 @@ class KlicktippConnector {
     smsnumber = ""
   ) => {
     if ((!email || email === "") && smsnumber === "") {
-      this.error = "Illegal Arguments";
-      return false;
+      throw "Illegal Arguments";
     }
     // subscribe
     const data = { email, fields };
@@ -297,7 +290,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return res.data;
     }
-    this.error = `Subscription failed: ${res.response.statusText}`;
+    throw `Subscription failed: ${res.response.statusText}`;
     return false;
   };
 
@@ -310,7 +303,7 @@ class KlicktippConnector {
    */
   unsubscribe = async (email) => {
     if (!email || email === "") {
-      this.error = "Illegal Arguments";
+      throw "Illegal Arguments";
       return false;
     }
 
@@ -322,7 +315,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return true;
     }
-    this.error = `Unsubscription failed:  ${res.response.statusText}`;
+    throw `Unsubscription failed:  ${res.response.statusText}`;
     return false;
   };
 
@@ -336,7 +329,7 @@ class KlicktippConnector {
    */
   tag = async (email, tagids) => {
     if (!email || email === "" || !tagids || tagids === "") {
-      this.error = "Illegal Arguments";
+      throw "Illegal Arguments";
       return false;
     }
 
@@ -351,7 +344,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return res.data;
     }
-    this.error = `Tagging failed: ${res.response.statusText}`;
+    throw `Tagging failed: ${res.response.statusText}`;
     return false;
   };
 
@@ -365,7 +358,7 @@ class KlicktippConnector {
    */
   untag = async (email, tagid) => {
     if (!email || email === "" || !tagid || tagid === "") {
-      this.error = "Illegal Arguments";
+      throw "Illegal Arguments";
       return false;
     }
 
@@ -380,7 +373,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return true;
     }
-    this.error = `Untagging failed: ${res.response.statusText}`;
+    throw `Untagging failed: ${res.response.statusText}`;
     return false;
   };
 
@@ -394,7 +387,7 @@ class KlicktippConnector {
    */
   resend = async (email, autoresponder) => {
     if (!email || email === "" || !autoresponder || autoresponder === "") {
-      this.error = "Illegal Arguments";
+      throw "Illegal Arguments";
       return false;
     }
 
@@ -406,7 +399,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return true;
     }
-    this.error = `Resend failed: ${res.response.statusText}`;
+    throw `Resend failed: ${res.response.statusText}`;
     return false;
   };
 
@@ -421,7 +414,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return res.data;
     }
-    this.error = `Subscriber index failed: ${res.response.statusText}`;
+    throw `Subscriber index failed: ${res.response.statusText}`;
     return false;
   };
 
@@ -434,7 +427,7 @@ class KlicktippConnector {
    */
   subscriberGet = async (subscriberid) => {
     if (!subscriberid || subscriberid === "") {
-      this.error = "Illegal Arguments";
+      throw "Illegal Arguments";
       return false;
     }
 
@@ -443,7 +436,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return res.data;
     }
-    this.error = `Subscriber get failed:  ${res.response.statusText}`;
+    throw `Subscriber get failed:  ${res.response.statusText}`;
     return false;
   };
 
@@ -456,7 +449,7 @@ class KlicktippConnector {
    */
   subscriberSearch = async (email) => {
     if (!email || email === "") {
-      this.error = "Illegal Arguments";
+      throw "Illegal Arguments";
       return false;
     }
     // search
@@ -466,7 +459,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return res.data;
     }
-    this.error = `Subscriber search failed: ${res.response.statusText}`;
+    throw `Subscriber search failed: ${res.response.statusText}`;
     return false;
   };
 
@@ -479,7 +472,7 @@ class KlicktippConnector {
    */
   subscriberTagged = async (tagid) => {
     if (!tagid || tagid === "") {
-      this.error = "Illegal Arguments";
+      throw "Illegal Arguments";
       return false;
     }
 
@@ -490,7 +483,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return res.data;
     }
-    this.error = `subscriber tagged failed: ${res.response.statusText}`;
+    throw `subscriber tagged failed: ${res.response.statusText}`;
     return false;
   };
 
@@ -510,7 +503,7 @@ class KlicktippConnector {
     newsmsnumber = ""
   ) => {
     if (!subscriberid || subscriberid === "") {
-      this.error = "Illegal Arguments";
+      throw "Illegal Arguments";
       return false;
     }
 
@@ -530,7 +523,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return true;
     }
-    this.error = `Subscriber update failed: ${res.response.statusText}`;
+    throw `Subscriber update failed: ${res.response.statusText}`;
     return false;
   };
 
@@ -543,7 +536,7 @@ class KlicktippConnector {
    */
   subscriberDelete = async (subscriberid) => {
     if (!subscriberid || subscriberid === "") {
-      this.error = "Illegal Arguments";
+      throw "Illegal Arguments";
       return false;
     }
 
@@ -553,7 +546,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return true;
     }
-    this.error = `Subscriber deletion failed: ${res.response.statusText}`;
+    throw `Subscriber deletion failed: ${res.response.statusText}`;
     return false;
   };
   /**
@@ -571,7 +564,7 @@ class KlicktippConnector {
       apikey === "" ||
       ((!email || email === "") && smsnumber === "")
     ) {
-      this.error = "Illegal Arguments";
+      throw "Illegal Arguments";
       return false;
     }
 
@@ -586,7 +579,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return true;
     }
-    this.error = `Subscription failed: ${res.response.statusText}`;
+    throw `Subscription failed: ${res.response.statusText}`;
     return false;
   };
 
@@ -600,7 +593,7 @@ class KlicktippConnector {
    */
   signout = async (apikey, email) => {
     if (!apikey || apikey === "" || !email || email === "") {
-      this.error = "Illegal Arguments";
+      throw "Illegal Arguments";
       return false;
     }
 
@@ -611,7 +604,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return true;
     }
-    this.error = `Untagging failed: ${res.response.statusText}`;
+    throw `Untagging failed: ${res.response.statusText}`;
     return false;
   };
 
@@ -625,7 +618,7 @@ class KlicktippConnector {
    */
   signoff = async (apikey, email) => {
     if (!apikey || apikey === "" || !email || email === "") {
-      this.error = "Illegal Arguments";
+      throw "Illegal Arguments";
       return false;
     }
 
@@ -636,7 +629,7 @@ class KlicktippConnector {
     if (!res.isAxiosError) {
       return true;
     }
-    this.error = `Unsubscription failed: ${res.response.statusText}`;
+    throw `Unsubscription failed: ${res.response.statusText}`;
     return false;
   };
 
