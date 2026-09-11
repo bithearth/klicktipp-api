@@ -1,8 +1,13 @@
-const querystring = require("querystring");
-const axios = require("axios").default;
+const axios = require("axios");
 
 class KlicktippConnector {
-  constructor(service = "https://api.klicktipp.com") {
+  constructor(service = "https://api.klicktipp.com", { timeout = 15000, signal } = {}) {
+    if (!Number.isFinite(timeout) || timeout <= 0) {
+      throw new TypeError("timeout must be a positive number");
+    }
+    this.timeout = timeout;
+    this.signal = signal;
+    this.error = "";
     this.baseURL = service;
     this.sessionName = "";
     this.sessionId = "";
@@ -14,9 +19,7 @@ class KlicktippConnector {
    * @return string an error description of the last error
    */
   getLastError = () => {
-    const result = this.error;
-    throw "";
-    return result;
+    return this.error;
   };
 
   /**
@@ -27,10 +30,12 @@ class KlicktippConnector {
    * @return TRUE on success
    */
   login = async (username, password) => {
+    this.sessionId = "";
+    this.sessionName = "";
     if (!(username && password)) {
-      throw 'Login failed: Illegal Arguments';
+      throw this.createError("Login failed: Illegal Arguments", TypeError);
     }
-    
+
     const res = await this.httpRequest(
       "/account/login",
       "POST",
@@ -38,14 +43,14 @@ class KlicktippConnector {
       false,
     );
 
-    if (!res.isAxiosError) {
-      this.sessionId = res.data.sessid;
-      this.sessionName = res.data.session_name;
-
-      return true;
+    if (!res.data || typeof res.data.sessid !== "string" || !res.data.sessid ||
+        typeof res.data.session_name !== "string" || !res.data.session_name) {
+      throw this.createError("Login failed: invalid session response");
     }
+    this.sessionId = res.data.sessid;
+    this.sessionName = res.data.session_name;
 
-    throw `Login failed: ${res.response.statusText}`;
+    return true;
   };
 
   /**
@@ -54,16 +59,13 @@ class KlicktippConnector {
    * @return TRUE on success
    */
   logout = async () => {
-    const res = await this.httpRequest("/account/logout", "POST");
-
-    if (!res.isAxiosError) {
+    try {
+      await this.httpRequest("/account/logout", "POST");
+      return true;
+    } finally {
       this.sessionId = "";
       this.sessionName = "";
-
-      return true;
     }
-
-    throw `Logout failed: ${res.response.statusText}`;
   };
 
   /**
@@ -74,11 +76,7 @@ class KlicktippConnector {
   subscriptionProcessIndex = async () => {
     const res = await this.httpRequest("/list");
 
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-
-    throw `Subscription process index failed: ${res.response.statusText}`;
+    return res.data;
   };
 
   /**
@@ -90,17 +88,13 @@ class KlicktippConnector {
    */
   subscriptionProcessGet = async (listid) => {
     if (!listid || listid === "") {
-      throw "Illegal Arguments";
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // retrieve
-    const res = await this.httpRequest(`/subscriber/${listid}`);
+    const res = await this.httpRequest(`/list/${listid}`);
 
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-
-    throw `Subscription process get failed: ${res.response.statusText}`;
+    return res.data;
   };
 
   /**
@@ -113,18 +107,14 @@ class KlicktippConnector {
    */
   subscriptionProcessRedirect = async (listid, email) => {
     if (!listid || listid === "" || !email || email === "") {
-      throw "Illegal Arguments";
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // update
     const data = { listid, email };
     const res = await this.httpRequest("/list/redirect", "POST", data);
 
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-
-    throw `Subscription process get redirection url failed: ${res.response.statusText}`;
+    return res.data;
   };
   /**
    * Get all manual tags of the logged in user. Requires to be logged in.
@@ -134,11 +124,7 @@ class KlicktippConnector {
   tagIndex = async () => {
     const res = await this.httpRequest("/tag");
 
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-
-    throw `Tag index failed: ${res.response.statusText}`;
+    return res.data;
   };
 
   /**
@@ -150,15 +136,11 @@ class KlicktippConnector {
    */
   tagGet = async (tagid) => {
     if (!tagid || tagid === "") {
-      throw "Illegal Arguments";
+      throw this.createError("Illegal Arguments", TypeError);
     }
     const res = await this.httpRequest(`/tag/${tagid}`);
 
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-  
-    throw `Tag get failed: ${res.response.statusText}`;
+    return res.data;
   };
 
   /**
@@ -167,11 +149,11 @@ class KlicktippConnector {
    * @param name The name of the tag.
    * @param text (optional) An additional description of the tag.
    *
-   * @return The id of the newly created tag or false if failed.
+   * @return The id of the newly created tag.
    */
   tagCreate = async (name, text = "") => {
     if (!name || name === "") {
-      throw "Illegal Arguments";
+      throw this.createError("Illegal Arguments", TypeError);
     }
     const data = { name };
     if (text !== "") {
@@ -179,11 +161,7 @@ class KlicktippConnector {
     }
     const res = await this.httpRequest("/tag", "POST", data);
 
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-
-    throw `Tag creation failed: ${res.response.statusText}`;
+    return res.data;
   };
 
   /**
@@ -197,7 +175,7 @@ class KlicktippConnector {
    */
   tagUpdate = async (tagid, name = "", text = "") => {
     if (!tagid || tagid === "" || (name === "" && text === "")) {
-      throw "Illegal Arguments";
+      throw this.createError("Illegal Arguments", TypeError);
     }
     const data = {};
     if (name !== "") {
@@ -209,11 +187,7 @@ class KlicktippConnector {
 
     const res = await this.httpRequest(`/tag/${tagid}`, "PUT", data);
 
-    if (!res.isAxiosError) {
-      return true;
-    }
-
-    throw `Tag update failed: ${res.response.statusText}`;
+    return true;
   };
 
   /**
@@ -225,16 +199,12 @@ class KlicktippConnector {
    */
   tagDelete = async (tagid) => {
     if (!tagid || tagid === "") {
-      throw "Illegal Arguments";
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     const res = await this.httpRequest(`/tag/${tagid}`, "DELETE");
 
-    if (!res.isAxiosError) {
-      return true;
-    }
-    
-    throw `Tag deletion failed: ${res.response.statusText}`;
+    return true;
   };
 
   /**
@@ -245,11 +215,7 @@ class KlicktippConnector {
   fieldIndex = async () => {
     const res = await this.httpRequest("/field");
 
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-
-    throw `Field index failed: ${res.response.statusText}`;
+    return res.data;
   };
 
   /**
@@ -270,7 +236,7 @@ class KlicktippConnector {
     smsnumber = ""
   ) => {
     if ((!email || email === "") && smsnumber === "") {
-      throw "Illegal Arguments";
+      throw this.createError("Illegal Arguments", TypeError);
     }
     // subscribe
     const data = { email, fields };
@@ -287,11 +253,7 @@ class KlicktippConnector {
 
     const res = await this.httpRequest("/subscriber", "POST", data);
 
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-    throw `Subscription failed: ${res.response.statusText}`;
-    return false;
+    return res.data;
   };
 
   /**
@@ -303,8 +265,7 @@ class KlicktippConnector {
    */
   unsubscribe = async (email) => {
     if (!email || email === "") {
-      throw "Illegal Arguments";
-      return false;
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // unsubscribe;
@@ -312,11 +273,7 @@ class KlicktippConnector {
 
     const res = await this.httpRequest("/subscriber/unsubscribe", "POST", data);
 
-    if (!res.isAxiosError) {
-      return true;
-    }
-    throw `Unsubscription failed:  ${res.response.statusText}`;
-    return false;
+    return true;
   };
 
   /**
@@ -329,8 +286,7 @@ class KlicktippConnector {
    */
   tag = async (email, tagids) => {
     if (!email || email === "" || !tagids || tagids === "") {
-      throw "Illegal Arguments";
-      return false;
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // tag
@@ -341,11 +297,7 @@ class KlicktippConnector {
 
     const res = await this.httpRequest("/subscriber/tag", "POST", data);
 
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-    throw `Tagging failed: ${res.response.statusText}`;
-    return false;
+    return res.data;
   };
 
   /**
@@ -358,8 +310,7 @@ class KlicktippConnector {
    */
   untag = async (email, tagid) => {
     if (!email || email === "" || !tagid || tagid === "") {
-      throw "Illegal Arguments";
-      return false;
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // subscribe
@@ -370,11 +321,7 @@ class KlicktippConnector {
 
     const res = await this.httpRequest("/subscriber/untag", "POST", data);
 
-    if (!res.isAxiosError) {
-      return true;
-    }
-    throw `Untagging failed: ${res.response.statusText}`;
-    return false;
+    return true;
   };
 
   /**
@@ -387,8 +334,7 @@ class KlicktippConnector {
    */
   resend = async (email, autoresponder) => {
     if (!email || email === "" || !autoresponder || autoresponder === "") {
-      throw "Illegal Arguments";
-      return false;
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // resend/reset autoresponder
@@ -396,11 +342,7 @@ class KlicktippConnector {
 
     const res = await this.httpRequest("/subscriber/resend", "POST", data);
 
-    if (!res.isAxiosError) {
-      return true;
-    }
-    throw `Resend failed: ${res.response.statusText}`;
-    return false;
+    return true;
   };
 
   /**
@@ -411,11 +353,7 @@ class KlicktippConnector {
   subscriberIndex = async () => {
     const res = await this.httpRequest("/subscriber");
 
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-    throw `Subscriber index failed: ${res.response.statusText}`;
-    return false;
+    return res.data;
   };
 
   /**
@@ -427,17 +365,12 @@ class KlicktippConnector {
    */
   subscriberGet = async (subscriberid) => {
     if (!subscriberid || subscriberid === "") {
-      throw "Illegal Arguments";
-      return false;
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // retrieve
     const res = await this.httpRequest(`/subscriber/${subscriberid}`);
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-    throw `Subscriber get failed:  ${res.response.statusText}`;
-    return false;
+    return res.data;
   };
 
   /**
@@ -449,18 +382,13 @@ class KlicktippConnector {
    */
   subscriberSearch = async (email) => {
     if (!email || email === "") {
-      throw "Illegal Arguments";
-      return false;
+      throw this.createError("Illegal Arguments", TypeError);
     }
     // search
     const data = { email };
     const res = await this.httpRequest("/subscriber/search", "POST", data);
 
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-    throw `Subscriber search failed: ${res.response.statusText}`;
-    return false;
+    return res.data;
   };
 
   /**
@@ -472,19 +400,14 @@ class KlicktippConnector {
    */
   subscriberTagged = async (tagid) => {
     if (!tagid || tagid === "") {
-      throw "Illegal Arguments";
-      return false;
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // search
     const data = { tagid };
     const res = await this.httpRequest("/subscriber/tagged", "POST", data);
 
-    if (!res.isAxiosError) {
-      return res.data;
-    }
-    throw `subscriber tagged failed: ${res.response.statusText}`;
-    return false;
+    return res.data;
   };
 
   /**
@@ -503,8 +426,7 @@ class KlicktippConnector {
     newsmsnumber = ""
   ) => {
     if (!subscriberid || subscriberid === "") {
-      throw "Illegal Arguments";
-      return false;
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // update
@@ -520,11 +442,7 @@ class KlicktippConnector {
       "PUT",
       data
     );
-    if (!res.isAxiosError) {
-      return true;
-    }
-    throw `Subscriber update failed: ${res.response.statusText}`;
-    return false;
+    return true;
   };
 
   /**
@@ -536,18 +454,13 @@ class KlicktippConnector {
    */
   subscriberDelete = async (subscriberid) => {
     if (!subscriberid || subscriberid === "") {
-      throw "Illegal Arguments";
-      return false;
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // delete
     const res = await this.httpRequest(`/subscriber/${subscriberid}`, "DELETE");
 
-    if (!res.isAxiosError) {
-      return true;
-    }
-    throw `Subscriber deletion failed: ${res.response.statusText}`;
-    return false;
+    return true;
   };
   /**
    * Subscribe an email. Requires an api key.
@@ -556,7 +469,7 @@ class KlicktippConnector {
    * @param email The email address of the subscriber.
    * @param fields (optional) Additional fields of the subscriber.
    *
-   * @return A redirection url as defined in the subscription process.
+   * @return TRUE on success
    */
   signin = async (apikey, email, fields = {}, smsnumber = "") => {
     if (
@@ -564,8 +477,7 @@ class KlicktippConnector {
       apikey === "" ||
       ((!email || email === "") && smsnumber === "")
     ) {
-      throw "Illegal Arguments";
-      return false;
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // subscribe
@@ -576,11 +488,7 @@ class KlicktippConnector {
     }
     const res = await this.httpRequest("/subscriber/signin", "POST", data);
 
-    if (!res.isAxiosError) {
-      return true;
-    }
-    throw `Subscription failed: ${res.response.statusText}`;
-    return false;
+    return true;
   };
 
   /**
@@ -593,19 +501,14 @@ class KlicktippConnector {
    */
   signout = async (apikey, email) => {
     if (!apikey || apikey === "" || !email || email === "") {
-      throw "Illegal Arguments";
-      return false;
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // untag
     const data = { apikey, email };
     const res = await this.httpRequest("/subscriber/signout", "POST", data);
 
-    if (!res.isAxiosError) {
-      return true;
-    }
-    throw `Untagging failed: ${res.response.statusText}`;
-    return false;
+    return true;
   };
 
   /**
@@ -618,39 +521,55 @@ class KlicktippConnector {
    */
   signoff = async (apikey, email) => {
     if (!apikey || apikey === "" || !email || email === "") {
-      throw "Illegal Arguments";
-      return false;
+      throw this.createError("Illegal Arguments", TypeError);
     }
 
     // unsubscribe
     const data = { apikey, email };
     const res = await this.httpRequest("/subscriber/signoff", "POST", data);
 
-    if (!res.isAxiosError) {
-      return true;
-    }
-    throw `Unsubscription failed: ${res.response.statusText}`;
-    return false;
+    return true;
   };
 
-  httpRequest = async (path, method = "GET", data, usesession = true) => {
+  createError = (message, ErrorType = Error) => {
+    this.error = message;
+    return new ErrorType(message);
+  };
+
+  httpRequest = async (path, method = "GET", data, usesession = true, { signal = this.signal } = {}) => {
+    this.error = "";
     const options = {
       baseURL: this.baseURL,
       method,
       url: path,
       data,
+      timeout: this.timeout,
+      signal,
+      // Never forward session cookies to a redirect target.
+      maxRedirects: 0,
       headers: {
         "Content-Type": "application/json",
-        "Content": "application/json"
+        "Accept": "application/json",
       },
     };
-    if (usesession && this.sessionName !== "") {
-      options.headers["Cookie"] = `${this.sessionName}=${this.sessionId}`;
+    if (usesession && this.sessionName && this.sessionId) {
+      options.headers.Cookie = `${this.sessionName}=${this.sessionId}`;
     }
 
-    return axios(options)
-      .then((res) => res)
-      .catch((error) => error);
+    try {
+      return await axios(options);
+    } catch (cause) {
+      const status = cause.response?.status;
+      const code = cause.code;
+      this.error = `${method} ${path} failed: ${status ? `HTTP ${status}` : (code || "Network error")}`;
+      const error = new Error(this.error);
+      error.name = "KlicktippError";
+      error.code = code;
+      error.status = status;
+      error.details = cause.response?.data;
+      // Do not expose Axios config: it can contain passwords and cookies.
+      throw error;
+    }
   };
 }
 
